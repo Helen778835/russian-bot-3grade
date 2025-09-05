@@ -6,6 +6,11 @@ from telegram.ext import Application, CommandHandler, MessageHandler, ContextTyp
 # Токен бота (берется из переменных окружения)
 TOKEN = os.environ.get('TOKEN')
 
+# Проверка что токен установлен
+if not TOKEN:
+    logging.error("Токен не найден! Убедитесь, что переменная окружения TOKEN установлена.")
+    exit(1)
+
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,7 +89,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.message.from_user.first_name
     await update.message.reply_text(
         f"Привет, {user_name}! Я бот-помощник по русскому языку для 3 класса.\n"
-        "Я могу:\n• 📚 Показать правила\n• 🎯 Провести викторину\n• 📖 Дать упражнения\n"
+        "Я могу:\n• 📚 Показать правила\n• 🎯 Провести викторина\n• 📖 Дать упражнения\n"
         "Выбери, что хочешь сделать:",
         reply_markup=reply_markup
     )
@@ -150,6 +155,11 @@ async def send_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answers[answer_map[user_choice]], parse_mode='Markdown')
     else:
         await update.message.reply_text("Ответ не найден.")
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обрабатывает любые текстовые сообщения"""
+    await update.message.reply_text("Привет! Используй меню для навигации.")
+    await show_menu(update, context)
 
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Начинает викторину"""
@@ -229,6 +239,9 @@ def main():
     application.add_handler(MessageHandler(filters.Regex('^(Упр 1 Часть1|Упр 2 Часть1|Упр 1 Часть2|Упр 2 Часть2)$'), send_exercise))
     application.add_handler(MessageHandler(filters.Regex('^(Ответ 1 Часть1|Ответ 2 Часть1|Ответ 1 Часть2|Ответ 2 Часть2)$'), send_answer))
     application.add_handler(MessageHandler(filters.Regex('^↩️ Назад$'), show_menu))
+    
+    # ★ ВАЖНО: Обработчик всех текстовых сообщений ★
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Викторина
     quiz_conv = ConversationHandler(
@@ -240,20 +253,9 @@ def main():
     )
     application.add_handler(quiz_conv)
 
-   # Запуск бота
+    # Запуск бота
     print("Бот запущен...")
     application.run_polling()
 
 if __name__ == '__main__':
     main()
-    # ==================================================
-    # ВНИМАНИЕ: ЭТОТ КОД ЗАЩИЩЕН ОТ ИЗМЕНЕНИЙ
-    # 
-    # Чтобы предложить улучшения:
-    # 1. Создайте новую ветку (fork)
-    # 2. Внесите изменения
-    # 3. Создайте pull request
-    # 4. Ждите одобрения автора
-    #
-    # Несанкционированные изменения запрещены!
-    # ==================================================
